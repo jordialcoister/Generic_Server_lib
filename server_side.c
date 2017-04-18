@@ -7,7 +7,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <errno.h>
-#include <pthreads.h>
+#include <pthread.h>
 #include "server_side.h"
 
 int init_server(int *fd, const char* address, unsigned int port){
@@ -48,17 +48,56 @@ int init_server(int *fd, const char* address, unsigned int port){
      /* The main loop has to be done in other function, run_server */
 }
 
+int create_server(int *fd, const char* address, unsigned int port){
+  struct sockaddr_in server;
+  
+  int sin_size;
+  
+  if ((*fd=socket(AF_INET, SOCK_STREAM, 0)))
+    return 1; //Returns a one, because failed in the first step
+  
+  /*Now we setup the server info struct */
+  server.sin_family=AF_INET;
+  if (port<=1024 || port > 65535){
+    server.sin_port=PORT;
+  }
+  else
+    server.sin_port=port;
+  if (!address)
+    server.sin_addr.s_addr = INADDR_ANY;
+  else
+    server.sin_addr.s_addr = inet_addr(address);
+  memset(&(server.sin_zero),0,8); 
+
+  /* Time to associate the socket with the server info */
+  if (bind(*fd,(struct sockaddr*)&server,sizeof(struct sockaddr))==-1){
+    return 2; //Error in the second step, the bind()
+  }
+
+  if (listen(*fd,BACKLOG)==-1){
+    return 3;
+  } //Error in the third step, listen()
+
+  
+  return 0; //Everything is ok at home
+
+  /* The main loop has to be done in other function, run_server */
+}
+
 int run_server(int *fd){
-      socklen_t sin_size;
+     socklen_t sin_size;
      int fd2;
      int numbytes;
      struct sockaddr_in client;
      char buf[MAXBUFSIZE];
 
      memset(buf,0,MAXBUFSIZE);
-     sin_size=sizeof(struct sockaddr_in);
+     sin_size=sizeof(client);
+     /*printf("sin_size= %i",sin_size);*/
      for(;;){
-	  if ((fd2=accept(*fd,(struct sockaddr *)&client, &sin_size))<0){
+       
+       fd2=accept(*fd,(struct sockaddr *)&client, &sin_size);
+       if (fd2==-1){
 	       perror("Accept error: ");
 	       return 4; /*Eror in the fourth step, accept*/
 	  }
