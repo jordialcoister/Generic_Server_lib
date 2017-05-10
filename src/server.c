@@ -1,29 +1,30 @@
-#include <stdio.h>
-#include <stdlib.h>
 #include "server_side.h"
+#include <stdlib.h>
+#include <stdio.h>
 
 int main(int argc, char *argv[]){
-     int fd;
+     t_server server;
      int res;
-  
-     if((res=create_server(&fd, NULL, 56789)))
-	  printf("Server created successfully!");
-     else
-	  printf("Error número: %i",res);
+     const char address[]="192.168.1.200";
 
-     if (run_server(&fd)){
-	  printf("Error ejecutando el servidor\n.");
-	  /*if (init_server(&fd))
-	       printf("Server destroyed successfully!");
-	  else 
-	       printf("There was an error while destroying the server...");
-	       exit(-1);*/
+     res=create_server(&server, 56789, NULL,0);
+     if (!res){
+	  printf("Servidor creat correctament\n");
+     } else {
+	  printf("Error al crear el servidor: %i\n",res);
      }
-  
-     if (destroy_server(&fd))
-	  printf("Server destroyed successfully!");
-     else 
-	  printf("There was an error while destroying the server...");
-
+     res=start_server(&server);
+     if (!res){
+	  printf("Servidor iniciant correctament\n");
+     } else {
+	  printf("Error a l'iniciar el servidor: %i\n",res);
+     }
+     res=close_server(&server);
+     if (!res){
+	  printf("Servidor destruït correctament\n");
+     } else {
+	  printf("Error al destruïr el servidor: %i\n",res);
+     }
+          
      exit(0);
 }

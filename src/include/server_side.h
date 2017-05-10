@@ -10,6 +10,8 @@
    given a local address, and a port, create a server ready to wait
    for connections (later on its own thread)
 */ 
+#include <netinet/in.h>
+
 
 #define PORT 5678
 #define BACKLOG 2
@@ -19,7 +21,22 @@
 #define DEF_ERR "Error desconocido\n"
 #define MAXBUFSIZE 512
 
+typedef struct {
+     int sd; 			/* The socket descriptor for the server */
+     struct sockaddr_in addr;
+     char outbuf[MAXBUFSIZE];	/* The buffers to send to/receive from client */
+     char inbuf[MAXBUFSIZE];     
+} t_server;
+
+typedef struct {
+     int sd;
+     struct sockaddr_in addr;
+     char outbuf[MAXBUFSIZE];	/* The buffers to send to/receive from				 * the server */
+     char inbuf[MAXBUFSIZE];
+} t_client;
+
 const char* print_error();
-int create_server(int *fd, const char* address, unsigned int port);
-int run_server(int *fd);
-int destroy_server(int *fd);
+/*int create_server(int *fd, const char* address, unsigned int port);*/
+int create_server(t_server *s, int port, const char *address, char options);
+int start_server(t_server *s);
+int close_server(t_server *s);
