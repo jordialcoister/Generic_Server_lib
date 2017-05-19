@@ -1,0 +1,9 @@
+Dummy Server v0.1 (codename amoeba)
+Created by: Jordi Garcia Soler
+Release Date: 10-05-17
+This software is distributed under the GPVv3 license and with
+ABSOLUTELY no guarantee, Use it at your own risk.
+=================================================
+
+Benvingut a ma casa!
+Sigues tan amable de dir el que penses de mi i no t'espantes de la resposta.

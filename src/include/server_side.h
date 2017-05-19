@@ -11,6 +11,7 @@
    for connections (later on its own thread)
 */ 
 #include <netinet/in.h>
+#include <stdio.h>
 
 
 #define PORT 5678
@@ -20,6 +21,7 @@
 #define ERROR_3 "3: Error durante el lisen\n"
 #define DEF_ERR "Error desconocido\n"
 #define MAXBUFSIZE 512
+
 
 typedef struct {
      int sd; 			/* The socket descriptor for the server */
@@ -38,5 +40,9 @@ typedef struct {
 const char* print_error();
 /*int create_server(int *fd, const char* address, unsigned int port);*/
 int create_server(t_server *s, int port, const char *address, char options);
-int start_server(t_server *s);
+int run_server(t_server *s);
 int close_server(t_server *s);
+void *server_core(void *client);
+void *cleaner(void *pool);
+
+

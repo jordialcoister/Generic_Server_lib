@@ -8,46 +8,16 @@
 #include <unistd.h>
 #include <errno.h>
 #include <pthread.h>
-#include "server_side.h"
+#include <signal.h>
+#include "include/server_side.h"
+#include "include/server_routines.h"
 
-/* int init_server(int *fd, const char* address, unsigned int port){ */
-/*      struct sockaddr_in server, client; */
-  
-/*      int sin_size; */
-   
-/*      if (!(*fd=socket(AF_INET, SOCK_STREAM, 0))) */
-/* 	  return 1; //Returns a one, because failed in the first step */
+volatile sig_atomic_t fatal_error_in_progress = 0;
+pthread_t servers[5];
+pthread_t joiners[5];
 
-/*      /\*Now we setup the server info struct *\/ */
-/* 	     server.sin_family=AF_INET; */
-/*      if ((port<=1024) || (port > 65535)){ */
-/* 	  server.sin_port=htons(PORT); */
-/*      } */
-/*      else */
-/* 	  server.sin_port=htons(port); */
-/*      if (!address) */
-/* 	  server.sin_addr.s_addr = INADDR_ANY; */
-/*      else */
-/* 	  server.sin_addr.s_addr = inet_addr(address); */
 
-/*      memset(&(server.sin_zero),0,8); */
 
-/*      /\* Time to associate the socket with the server info *\/ */
-/*      if (bind(*fd,(struct sockaddr*)&server,sizeof(struct sockaddr))==-1){ */
-/* 	  return 2; //Error in the second step, the bind() */
-/*      } */
-
-/*      if  (listen(*fd,BACKLOG)==-1){ */
-/* 	  return 3; */
-/*      } //Error in the third step, listen() */
-
-  
-/*      return 0; //Everything is ok at home */
-
-/*      /\* The main loop has to be done in other function, run_server *\/ */
-/* }  */
-
-/*int create_server(int *fd, const char* address, unsigned int port){*/
 int create_server(t_server *s, int port, const char *address, char options){
      
      int sin_size,ret=0;
@@ -88,41 +58,82 @@ int create_server(t_server *s, int port, const char *address, char options){
 /* The main loop has to be done in other function, run_server */
 }
 
-int start_server(t_server *s){
-     /* socklen_t sin_size; */
+int run_server(t_server *s){
      int fd2,numbytes,sin_size;
-     t_client client;
-     /*struct sockaddr_in client;*/
+     t_client client[5];
      char buf[MAXBUFSIZE];
+     int i=0,res=0;
+     
 
-     sin_size=sizeof(struct sockaddr_in);
-     /*printf("sin_size= %i",sin_size);*/
+     /*Associem una funció per a manejar l'arribada d'una SIGINT*/
+	  /*signal(SIGINT, termination_handler);
+	    signal(SIGTERM,termination_handler); */
+     
+     sin_size=sizeof(struct sockaddr_in); 
      for(;;){
-	  client.sd=accept(s->sd,(struct sockaddr *)&client.addr, &sin_size);
-	  if (client.sd==-1){
+	  client[i].sd=accept(s->sd,(struct sockaddr *)&client[i].addr, &sin_size);
+	  if (client[i].sd==-1){
 	       perror("Accept error: ");
 	       return 4; /*Eror in the fourth step, accept*/
 	  }
-	  /*Print a message to the log and send a welcome message to the
-	    other side, before closing the connection*/
-	  printf("Conexió rebuda des de %s\n",inet_ntoa(client.addr.sin_addr));
-	  /*send(client.sd,"Sigues benvingut al meu reialme.\r\nContestaré a les teves preguntes.\r\n",69,0);
-	  send(client.sd,"> ",2,0);
-	  while ((strcmp(buf,"quit\r\n")!=0)){
-	       if ((numbytes=recv(client.sd,buf,MAXBUFSIZE,0))>=0){
-		    buf[numbytes]=0;
-		    send(client.sd,buf,strlen(buf),0);
-	       }
-	       else
-		    break;
-		    }*/
-	  send(client.sd,"Have a nice day!\r\n",16,0);
-	  close (client.sd); 
+	  /*If we do this out of the thread we make it automatically
+	    thread-safe*/
+	  send_textfile("./welcome.txt",&client[i]);
+          /* We should create two threads per client: 
+           * -The client's attendant
+	   * -The thread's cleaner*/
+	  res=pthread_create(&servers[i], NULL, server_core, (void *)&client[i]);
+	  if (res){
+	       printf("ERROR: Return code from pthread_create is %ld",res);
+	       
+	       return res;
+	  }
+	  /*res=pthread_create(&joiners[i], cleaner, (void *)&servers[i],NULL);
+	  if (res){
+	       printf("ERROR: Return code from pthread_create is %ld",res);
+	       return res;
+	       }*/
+	  /* If anythig went right increment the index */
+	  i++;
+	  printf("Connectat al client %d\n",i);
      }
   
      return 0;
 }
 
+void *cleaner(void *pool){     
+     pthread_t *p=(pthread_t *)pool;
+     int ret;
+     
+     pthread_join(*p,(void *)&ret);
+     if ((int )ret){
+	  /* We should remove all resources here */
+	  printf("Conection closed successfully");
+     } else {
+	  perror("Error joining the thread");
+     }
+     
+     pthread_exit(NULL);
+}
+
+void *server_core(void *client){
+     /*Print a message to the log and send a welcome message to the
+       other side, before closing the connection*/
+     t_client *c=(t_client *)client;
+     int res;
+	  
+     printf("Conexió rebuda des de %s\n",inet_ntoa(c->addr.sin_addr));
+     res=server_prompt(c);
+     if (close(c->sd)<0)
+	  perror("Error al tancar la connexió: ");
+     /*pthread_exit(NULL);
+      * The call to pthread_exit is done implicitly when
+      * the function executed in it returns, so the call isn't
+      * necessary...
+      */
+}
+
+     
 /* Do we really need a funcion to destroy the server? Absolutely yes */
 
 int close_server(t_server *s){
@@ -132,6 +143,8 @@ int close_server(t_server *s){
      else
 	  return 1;
 }
+
+
 
 /*const char* print_error(){
 //  static int error;
