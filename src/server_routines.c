@@ -157,7 +157,14 @@ int server_prompt(t_client *c){
 	  
 	  token=strtok(c->inbuf," \r\n");
 	  
-	  switch (hash(token)){ 
+	  switch (hash(token)){
+	  case 2090806916:
+
+	       break;
+
+	  case 2090608092:
+
+	       break;
 	       
 	  case 2090665480:	/* quit */
 	       res=send(c->sd,GOODBYE,strlen(GOODBYE),0);
