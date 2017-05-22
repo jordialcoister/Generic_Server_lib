@@ -158,11 +158,11 @@ int server_prompt(t_client *c){
 	  token=strtok(c->inbuf," \r\n");
 	  
 	  switch (hash(token)){
-	  case 2090806916:
+	  case 2090806916:	/* user */
 
 	       break;
 
-	  case 2090608092:
+	  case 2090608092:	/* pass */
 
 	       break;
 	       
