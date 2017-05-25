@@ -3,12 +3,12 @@ CC=gcc
 CFLAGS=-g -W -I$(IDIR)
 LIBS=-pthread -lcrypt
 
-OBJ=server.o server_side.o server_routines.o
+OBJ=server.o server_side.o server_routines.o auth.o
 
 all: server
 
 server: $(OBJ)
-	clear
+	#clear
 	$(CC) $(CFLAGS) -o $@ $(OBJ) $(LIBS)
 
 server.o: server.c $(IDIR)server_side.h
@@ -19,6 +19,9 @@ server_side.o: server_side.c $(IDIR)server_side.h
 
 server_routines.o: server_routines.c $(IDIR)server_side.h
 	$(CC) $(CFLAGS) -c -o $@ server_routines.c
+
+auth.o: auth.c $(IDIR)auth.h
+	$(CC) $(CFLAGS) -c -o $@ auth.c
 
 .PHONY: clean
 

@@ -123,14 +123,19 @@ void *server_core(void *client){
      int res;
 	  
      printf("Conexió rebuda des de %s\n",inet_ntoa(c->addr.sin_addr));
-     res=server_prompt(c);
-     if (close(c->sd)<0)
+     res=auth_prompt(c);
+     if (res == 0){ 		/* Tot ok */
+	  server_prompt(c);
+     } else {
+	  if (close(c->sd)<0)
 	  perror("Error al tancar la connexió: ");
-     /*pthread_exit(NULL);
-      * The call to pthread_exit is done implicitly when
-      * the function executed in it returns, so the call isn't
-      * necessary...
+	  pthread_exit(NULL);
+     /*
+      * The call to pthread_exit is done implicitly when the function
+      * executed in it returns, so the call isn't necessary... but I
+      * put it here for clarification
       */
+     }
 }
 
      

@@ -6,13 +6,17 @@
 #include <sys/types.h>
 #include <unistd.h>
 #include <signal.h>
+/*#include <security/pam_appl.h>*/
 #include "include/server_side.h"
 #include "include/server_routines.h"
+#include "include/ftpreplycodes.h"
+#include "include/auth.h"
 
 //enum commands = { "USER", "PASS", "LS", "CD" };
 
 DIR *d;
 struct dirent *dir;
+struct session_t session;
 
 void termination_handler(int signum){
      printf("Signal captured!");
@@ -106,7 +110,82 @@ int ftp_ls(t_client *c){
      return(0);
 }
 
-
+int auth_prompt(t_client *c){
+     int res;
+     char *token;
+     
+     for (;;){
+	  res=send(c->sd,PROMPT,1,0);
+	  printf("Enviats %d caràcters\n",res);
+	  if (res == -1){
+	       perror("Sending error: ");
+	       return -1;
+	  }
+	  res=recv(c->sd,c->inbuf,MAXBUFSIZE,0);
+	  printf("Rebuts %d caràcters\n",res);
+	  if (res == -1){
+	       perror("Receiving error: ");
+	       return -2;
+	  }
+	  
+	  token=strtok(c->inbuf," \r\n");
+	  if (strcmp("user",c->inbuf)==0){
+	       /* hi ha que comprovar si hi ha una sessió en marxa, si
+		* la hi ha, hauré de finalitzar la sessió, però deixar
+		* que les descàrregues s'acaben, si no n'hi ha,
+		* esperem la contrassenya*/
+	       token=strtok(NULL," \r\n");
+	       if (token){
+		    /* Check if the user exists first */
+		    /* Check if there is an active session and act
+		     * accordingly, by now we just copy the username
+		     * in a variable*/
+		    strcpy(session.user,token);
+		    send(c->sd,USEROK,strlen(USEROK),0);
+		    printf("Usuari rebut: %s\nEsperant la pass\n",token);
+		    /* We send another prompt, in this case waiting
+		     * for the password */
+		    res=send(c->sd,PROMPT,1,0);
+		    printf("Enviats %d caràcters\n",res);
+		    if (res == -1){
+			 perror("Sending error: ");
+			 return -1;
+		    }
+		    res=recv(c->sd,c->inbuf,MAXBUFSIZE,0);
+		    printf("Rebuts %d caràcters\n",res);
+		    if (res == -1){
+			 perror("Receiving error: ");
+			 return -2;
+		    }
+		    token=strtok(c->inbuf," \r\n");
+		    if (strcmp("pass",c->inbuf)==0){
+			 token=strtok(NULL," \r\n");
+			 if (token){
+			      printf("Rebuda contrasenya: %s",token);
+			      if (sys_auth_user(session.user, token)==0){
+				   send(c->sd,LOGINOK,strlen(LOGINOK),0);
+				   /* We change the state of the
+				    * session to "started"*/
+				   session.logged_in=1;
+				   return 0;
+				   /* Everything went fine, so we
+				    * return 0 in order to server_core
+				    * to call server_prompt */
+			      } else {
+				   send(c->sd,ENOTLOGIN,strlen(ENOTLOGIN),0);
+			      } /* sys_auth_user */
+			 }
+		    } else {
+			 send(c->sd,BADSEQ,strlen(BADSEQ),0);
+			 continue;
+		    }/* pass */
+	       }
+	  } else {
+	       send(c->sd,BADSEQ,strlen(BADSEQ),0);
+	  } /* user */
+     } /* for */
+}      /* function */
+     
 int server_prompt(t_client *c){
      /*S'hauria de copiar al buffer quan no se sap la longitud a
      priori del missatge, per exemple, si s'ha d'enviar un llistat de
@@ -117,6 +196,7 @@ int server_prompt(t_client *c){
      struct dirent *direntry;
      char *token;
      struct sigaction new_action, old_action;
+     char user[32];
 
      new_action.sa_handler = termination_handler;
      sigemptyset (&new_action.sa_mask);
@@ -128,13 +208,13 @@ int server_prompt(t_client *c){
      if (old_action.sa_handler != SIG_IGN)
 	  sigaction (SIGTERM, &new_action, NULL);
 
+     
      chdir(ROOT);
      /*if (chroot(ROOT)!=0){
 	  perror("chroot: ");
 	  return 1;
 	  }
 	  strcpy(status.root,"/");*/
-
      strcpy(status.root,ROOT);
      status.transmission=ASCII;
      for(;;){
@@ -144,10 +224,6 @@ int server_prompt(t_client *c){
 	       perror("Sending error: ");
 	       return -1;
 	  }
-	  /*
-	    Here goes code to determine the command got
-	   */
-
 	  res=recv(c->sd,c->inbuf,MAXBUFSIZE,0);
 	  printf("Rebuts %d caràcters\n",res);
 	  if (res == -1){
@@ -158,14 +234,43 @@ int server_prompt(t_client *c){
 	  token=strtok(c->inbuf," \r\n");
 	  
 	  switch (hash(token)){
-	  case 2090806916:	/* user */
-
-	       break;
-
-	  case 2090608092:	/* pass */
-
+	  case 2090806916: /* user */
+	       token=strtok(NULL," \r\n");
+	       if (token){
+		    send(c->sd,USEROK,strlen(USEROK),0);
+		    printf("Usuari rebut: %s",token);
+		    strcpy(user,token);
+		    res=recv(c->sd,c->inbuf,MAXBUFSIZE,0);
+		    printf("Rebuts %d caràcters\n",res);
+		    if (res == -1){
+			 perror("Receiving error: ");
+			 return -1;
+		    }
+		    token=strtok(c->inbuf," \r\n");
+		    if (strcmp("pass",token)){
+			 token=strtok(NULL," \r\n");
+			 if (token==0){
+			      printf("Rebuda contrasenya: %s",token);
+			      if (sys_auth_user(user, token)){
+				   send(c->sd,LOGINOK,strlen(LOGINOK),0);
+			      }
+			 }
+			 else{
+			      perror("Error en CD: ");
+			      send(c->sd,CD_ERROR,strlen(CD_ERROR),0);
+			 }
+		    }
+		    else{
+			 send(c->sd,BADSEQ,strlen(BADSEQ),0);
+			 memset(user,0,strlen(user));
+		    }
+	       }
+	       
 	       break;
 	       
+	  case 2090608092:  	/* pass */
+	       send(c->sd,BADSEQ,strlen(BADSEQ),0);
+	       break;
 	  case 2090665480:	/* quit */
 	       res=send(c->sd,GOODBYE,strlen(GOODBYE),0);
 	       return 1;

@@ -11,13 +11,20 @@ to to its job, like send files, etc... */
 
 typedef enum transtype {ASCII, BINARY};
 
-typedef struct server_status {
+typedef struct server_status{
      unsigned char root[PATH_MAX];
      enum transtype transmission;
+};
+
+typedef struct  session_t{
+     char user[128];
+     unsigned char logged_in;
 };
      
 int send_textfile(const char *path, t_client *c);
 int server_prompt(t_client *c);
+int auth_prompt(t_client *c);
+int sys_auth_user (const char*username, const char*password);
 int ftp_cd(t_client *c, char *dirname);
 int ftp_cdup(t_client *c);
 int ftp_mkdir(t_client *c, char *dirname);
