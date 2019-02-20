@@ -18,7 +18,7 @@ pthread_t joiners[5];
 
 
 
-int create_server(t_server *s, int port, const char *address, char options){
+int create_server(t_host *s, int port, const char *address, char options){
      
      int sin_size,ret=0;
      
@@ -58,9 +58,9 @@ int create_server(t_server *s, int port, const char *address, char options){
 /* The main loop has to be done in other function, run_server */
 }
 
-int run_server(t_server *s){
+int run_server(t_host *s){
      int fd2,numbytes,sin_size;
-     t_client client[5];
+     t_host client[5];
      char buf[MAXBUFSIZE];
      int i=0,res=0;
      
@@ -119,7 +119,7 @@ void *cleaner(void *pool){
 void *server_core(void *client){
      /*Print a message to the log and send a welcome message to the
        other side, before closing the connection*/
-     t_client *c=(t_client *)client;
+     t_host *c=(t_host *)client;
      int res;
 	  
      printf("Conexió rebuda des de %s\n",inet_ntoa(c->addr.sin_addr));
@@ -141,7 +141,7 @@ void *server_core(void *client){
      
 /* Do we really need a funcion to destroy the server? Absolutely yes */
 
-int close_server(t_server *s){
+int close_server(t_host *s){
      if (!close(s->sd))		/* Close the socket, but there's a lot
 				 * * * more to do here */
 	  return 0;

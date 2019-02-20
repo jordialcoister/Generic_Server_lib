@@ -21,13 +21,13 @@ typedef struct  session_t{
      unsigned char logged_in;
 };
      
-int send_textfile(const char *path, t_client *c);
-int server_prompt(t_client *c);
-int auth_prompt(t_client *c);
+int send_textfile(const char *path, t_host *c);
+int server_prompt(t_host *c);
+int auth_prompt(t_host *c);
 int sys_auth_user (const char*username, const char*password);
-int ftp_cd(t_client *c, char *dirname);
-int ftp_cdup(t_client *c);
-int ftp_mkdir(t_client *c, char *dirname);
-int ftp_rmdir(t_client *c, char *dirname);
-int ftp_ls(t_client *c);
+int ftp_cd(t_host *c, char *dirname);
+int ftp_cdup(t_host *c);
+int ftp_mkdir(t_host *c, char *dirname);
+int ftp_rmdir(t_host *c, char *dirname);
+int ftp_ls(t_host *c);
 

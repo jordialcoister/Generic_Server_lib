@@ -25,23 +25,23 @@
 
 typedef struct {
      int sd; 			/* The socket descriptor for the server */
-     struct sockaddr_in addr;
-     char outbuf[MAXBUFSIZE];	/* The buffers to send to/receive from client */
-     char inbuf[MAXBUFSIZE];     
-} t_server;
+     struct sockaddr_in addr;   /* The address to listen at */
+     char outbuf[MAXBUFSIZE];	/* The buffer to send to client */
+     char inbuf[MAXBUFSIZE];	/* The buffer to receive from client */
+} t_host;
 
-typedef struct {
-     int sd;
-     struct sockaddr_in addr;
-     char outbuf[MAXBUFSIZE];	/* The buffers to send to/receive from				 * the server */
-     char inbuf[MAXBUFSIZE];
-} t_client;
+/* typedef struct { */
+/*      int sd; */
+/*      struct sockaddr_in addr; */
+/*      char outbuf[MAXBUFSIZE];	/\* The buffers to send to/receive from				 * the server *\/ */
+/*      char inbuf[MAXBUFSIZE]; */
+/* } t_client; */
 
 const char* print_error();
 /*int create_server(int *fd, const char* address, unsigned int port);*/
-int create_server(t_server *s, int port, const char *address, char options);
-int run_server(t_server *s);
-int close_server(t_server *s);
+int create_server(t_host *s, int port, const char *address, char options);
+int run_server(t_host *s);
+int close_server(t_host *s);
 void *server_core(void *client);
 void *cleaner(void *pool);
 

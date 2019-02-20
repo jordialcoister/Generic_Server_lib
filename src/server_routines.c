@@ -46,7 +46,7 @@ unsigned long hash(unsigned char *str)
     return hash;
 }
 
-int ftp_cd(t_client *c, char *dirname){
+int ftp_cd(t_host *c, char *dirname){
      int res;
 
      res=chdir(dirname);
@@ -61,7 +61,7 @@ int ftp_cd(t_client *c, char *dirname){
      }
 }
 
-int ftp_rmdir(t_client *c, char *dirname){
+int ftp_rmdir(t_host *c, char *dirname){
      int res;
 
      if((res=rmdir(dirname))==-1){
@@ -75,7 +75,7 @@ int ftp_rmdir(t_client *c, char *dirname){
      }
 }
 
-int ftp_mkdir(t_client *c, char *dirname){
+int ftp_mkdir(t_host *c, char *dirname){
      int res;
      
      res=mkdir(dirname,0755);
@@ -91,7 +91,7 @@ int ftp_mkdir(t_client *c, char *dirname){
      }
 }
 
-int ftp_ls(t_client *c){
+int ftp_ls(t_host *c){
      int res;
      
      d=opendir(".");
@@ -110,7 +110,7 @@ int ftp_ls(t_client *c){
      return(0);
 }
 
-int auth_prompt(t_client *c){
+int auth_prompt(t_host *c){
      int res;
      char *token;
      
@@ -186,7 +186,7 @@ int auth_prompt(t_client *c){
      } /* for */
 }      /* function */
      
-int server_prompt(t_client *c){
+int server_prompt(t_host *c){
      /*S'hauria de copiar al buffer quan no se sap la longitud a
      priori del missatge, per exemple, si s'ha d'enviar un llistat de
      fitxers /*memcpy(c->outbuf,PROMPT,1);*/
@@ -322,7 +322,7 @@ int server_prompt(t_client *c){
      return 0;
 }
 
-int send_textfile(const char *path, t_client *c){
+int send_textfile(const char *path, t_host *c){
      /* We MUST make this function thread-safe, for God sake! */
      FILE *fd;
      int r=0,s=0,sumr=0,sums=0;

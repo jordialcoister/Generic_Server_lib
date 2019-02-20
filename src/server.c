@@ -6,13 +6,13 @@
 #include <pthread.h>
 #include "server_side.h"
 
-t_server server;
+t_host server;
 
 
 int main(int argc, char *argv[]){
-     /*t_server server;*/
+     /*t_host server;*/
      int res;
-     const char address[]="192.168.1.200";
+     const char address[]="127.0.0.1";
      int status;
      pid_t pid, sid;
 
