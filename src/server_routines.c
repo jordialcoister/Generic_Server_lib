@@ -56,6 +56,8 @@ int ftp_cd(t_host *c, char *dirname){
      }
      else {
 	  getcwd(c->outbuf,strlen(c->outbuf));
+	  /* res=send(c->sd,"\r\n",2,0); */
+	  getcwd(c->outbuf,strlen(c->outbuf));
 	  res=send(c->sd,c->outbuf,strlen(c->outbuf),0);
 	  return 0;
      }
@@ -85,18 +87,21 @@ int ftp_mkdir(t_host *c, char *dirname){
      }
      else {
 	  sprintf(c->outbuf,"Directori %s creat satisfactòriament\r\n",dirname);
-	  /*getcwd(c->outbuf,strlen(c->outbuf));*/
+	  getcwd(c->outbuf,strlen(c->outbuf));
 	  res=send(c->sd,c->outbuf,strlen(c->outbuf),0);
 	  return 0;
      }
 }
 
-int ftp_ls(t_host *c){
+int ftp_ls(t_host *c, char *dirname){
      int res;
-     
-     d=opendir(".");
-     /*memset(c->outbuf,0,strlen(c->outbuf));*/
-     c->outbuf[0]=0;
+
+     if (dirname != NULL)
+       d = opendir(dirname);
+     else
+       d = opendir(".");
+     /* d=opendir("."); */
+     /* memset(c->outbuf,0,strlen(c->outbuf)); */
      if (d)
      {
 	  while ((dir = readdir(d)) != NULL)
@@ -106,6 +111,7 @@ int ftp_ls(t_host *c){
 	  }
 	  closedir(d);
      }
+     printf("LLISTAT FITXERS: \r\n%s",c->outbuf);
      res=send(c->sd,c->outbuf,strlen(c->outbuf),0);
      return(0);
 }
@@ -114,76 +120,74 @@ int auth_prompt(t_host *c){
      int res;
      char *token;
      
-     for (;;){
-	  res=send(c->sd,PROMPT,1,0);
-	  printf("Enviats %d caràcters\n",res);
-	  if (res == -1){
-	       perror("Sending error: ");
-	       return -1;
-	  }
-	  res=recv(c->sd,c->inbuf,MAXBUFSIZE,0);
-	  printf("Rebuts %d caràcters\n",res);
-	  if (res == -1){
-	       perror("Receiving error: ");
-	       return -2;
-	  }
+     /* for (;;){ */
+     res=send(c->sd,PROMPT,1,0);
+     /* printf("Enviats %d caràcters\n",res); */
+     if (res == -1){
+       perror("Sending error: ");
+       return -1;
+     }
+     res=recv(c->sd,c->inbuf,MAXBUFSIZE,0);
+     /* printf("Rebuts %d caràcters\n",res); */
+     if (res == -1){
+       perror("Receiving error: ");
+       return -2;
+     }
 	  
-	  token=strtok(c->inbuf," \r\n");
-	  if (strcmp("user",c->inbuf)==0){
-	       /* hi ha que comprovar si hi ha una sessió en marxa, si
-		* la hi ha, hauré de finalitzar la sessió, però deixar
-		* que les descàrregues s'acaben, si no n'hi ha,
-		* esperem la contrassenya*/
-	       token=strtok(NULL," \r\n");
-	       if (token){
-		    /* Check if the user exists first */
-		    /* Check if there is an active session and act
-		     * accordingly, by now we just copy the username
-		     * in a variable*/
-		    strcpy(session.user,token);
-		    send(c->sd,USEROK,strlen(USEROK),0);
-		    printf("Usuari rebut: %s\nEsperant la pass\n",token);
-		    /* We send another prompt, in this case waiting
-		     * for the password */
-		    res=send(c->sd,PROMPT,1,0);
-		    printf("Enviats %d caràcters\n",res);
-		    if (res == -1){
-			 perror("Sending error: ");
-			 return -1;
-		    }
-		    res=recv(c->sd,c->inbuf,MAXBUFSIZE,0);
-		    printf("Rebuts %d caràcters\n",res);
-		    if (res == -1){
-			 perror("Receiving error: ");
-			 return -2;
-		    }
-		    token=strtok(c->inbuf," \r\n");
-		    if (strcmp("pass",c->inbuf)==0){
-			 token=strtok(NULL," \r\n");
-			 if (token){
-			      printf("Rebuda contrasenya: %s",token);
-			      if (sys_auth_user(session.user, token)==0){
-				   send(c->sd,LOGINOK,strlen(LOGINOK),0);
-				   /* We change the state of the
-				    * session to "started"*/
-				   session.logged_in=1;
-				   return 0;
-				   /* Everything went fine, so we
-				    * return 0 in order to server_core
-				    * to call server_prompt */
-			      } else {
-				   send(c->sd,ENOTLOGIN,strlen(ENOTLOGIN),0);
-			      } /* sys_auth_user */
-			 }
-		    } else {
-			 send(c->sd,BADSEQ,strlen(BADSEQ),0);
-			 continue;
-		    }/* pass */
-	       }
-	  } else {
-	       send(c->sd,BADSEQ,strlen(BADSEQ),0);
-	  } /* user */
-     } /* for */
+     token=strtok(c->inbuf," \r\n");
+     if (strcmp("user",c->inbuf)==0){
+       /* hi ha que comprovar si hi ha una sessió en marxa, si
+	* la hi ha, hauré de finalitzar la sessió, però deixar
+	* que les descàrregues s'acaben, si no n'hi ha,
+	* esperem la contrassenya*/
+       token=strtok(NULL," \r\n");
+       if (token){
+	 /* Check if the user exists first */
+	 /* Check if there is an active session and act
+	  * accordingly, by now we just copy the username
+	  * in a variable*/
+	 strcpy(session.user,token);
+	 send(c->sd,USEROK,strlen(USEROK),0);
+	 printf("Usuari rebut: %s\nEsperant la pass\n",token);
+	 /* We send another prompt, in this case waiting
+	  * for the password */
+	 res=send(c->sd,PROMPT,1,0);
+	 printf("Enviats %d caràcters\n",res);
+	 if (res == -1){
+	   perror("Sending error: ");
+	   return -1;
+	 }
+	 res=recv(c->sd,c->inbuf,MAXBUFSIZE,0);
+	 printf("Rebuts %d caràcters\n",res);
+	 if (res == -1){
+	   perror("Receiving error: ");
+	   return -2;
+	 }
+	 token=strtok(c->inbuf," \r\n");
+	 if (strcmp("pass",c->inbuf)==0){
+	   token=strtok(NULL," \r\n");
+	   if (token){
+	     printf("Rebuda contrasenya: %s",token);
+	     if (sys_auth_user(session.user, token)==0){
+	       send(c->sd,LOGINOK,strlen(LOGINOK),0);
+	       /* We change the state of the
+		* session to "started"*/
+	       session.logged_in=1;
+	       return 0;
+	       /* Everything went fine, so we
+		* return 0 in order to server_core
+		* to call server_prompt */
+	     } else {
+	       send(c->sd,ENOTLOGIN,strlen(ENOTLOGIN),0);
+	     } /* sys_auth_user */
+	   }
+	 } else {
+	   send(c->sd,BADSEQ,strlen(BADSEQ),0);
+	 }/* pass */
+       }
+     } else {
+       send(c->sd,BADSEQ,strlen(BADSEQ),0);
+     } /* user */
 }      /* function */
      
 int server_prompt(t_host *c){
@@ -219,20 +223,20 @@ int server_prompt(t_host *c){
      status.transmission=ASCII;
      for(;;){
 	  res=send(c->sd,PROMPT,1,0);
-	  printf("Enviats %d caràcters\n",res);
+	  /* printf("Enviats %d caràcters\n",res); */
 	  if (res == -1){
 	       perror("Sending error: ");
 	       return -1;
 	  }
 	  res=recv(c->sd,c->inbuf,MAXBUFSIZE,0);
-	  printf("Rebuts %d caràcters\n",res);
+	  /* printf("Rebuts %d caràcters\n",res); */
 	  if (res == -1){
 	       perror("Receiving error: ");
 	       return -1;
 	  }
 	  
 	  token=strtok(c->inbuf," \r\n");
-	  
+	  printf("Hash: %ld", hash(token));
 	  switch (hash(token)){
 	  case 2090806916: /* user */
 	       token=strtok(NULL," \r\n");
@@ -271,11 +275,20 @@ int server_prompt(t_host *c){
 	  case 2090608092:  	/* pass */
 	       send(c->sd,BADSEQ,strlen(BADSEQ),0);
 	       break;
-	  case 2090665480:	/* quit */
+	  case 6385632776 :	/* quit */
 	       res=send(c->sd,GOODBYE,strlen(GOODBYE),0);
 	       return 1;
 	  case 5863588:		/* ls */
-	       ftp_ls(c); 
+	       token=strtok(NULL," \r\n");
+	       if (token){
+		    printf("Llistant el directori: %s",token);
+		    ftp_cd(c,token);
+	       }
+	       else{
+		 printf("Llistant el directori\n");
+		 ftp_cd(c, NULL);
+	       }
+	       ftp_ls(c, token); 
 	       break;
 	  case 5863276: 	/* cd */
 	       token=strtok(NULL," \r\n");
@@ -288,10 +301,10 @@ int server_prompt(t_host *c){
 		    send(c->sd,CD_ERROR,strlen(CD_ERROR),0);
 	       }
 	       break;
-	  case 2090144241:	/* cdup */
+	  case 6385111537:	/* cdup */
 	       ftp_cd(c,"..");
 	       break;
-	  case 267375356: 	/* mkdir */
+	  case 210720772860: 	/* mkdir */
 	       token=strtok(NULL," \r\n");
 	       if(token){
 		    printf("Creant el directori: %s",token);
@@ -299,18 +312,18 @@ int server_prompt(t_host *c){
 	       }
 	       else{
 		    perror("Error en CD: ");
-		    send(c->sd,CD_ERROR,strlen(CD_ERROR),0);
+		    send(c->sd,MKDIR_ERROR,strlen(MKDIR_ERROR),0);
 	       }
 	       break;
-	  case 273376835:
+	  case 210726774339: 	/* rmdir */
 	       token=strtok(NULL," \r\n");
 	       if(token){
-		    printf("Creant el directori: %s",token);
+		    printf("Esborrant el directori: %s",token);
 		    ftp_rmdir(c,token);
 	       }
 	       else{
-		    perror("Error en CD: ");
-		    send(c->sd,CD_ERROR,strlen(CD_ERROR),0);
+		    perror("Error a l'esborrar el directori: ");
+		    send(c->sd,RMDIR_ERROR,strlen(RMDIR_ERROR),0);
 	       }
 	       break;
 	  default:
