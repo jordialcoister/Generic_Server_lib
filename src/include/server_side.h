@@ -14,7 +14,7 @@
 #include <stdio.h>
 
 
-#define PORT 5678
+#define DEF_PORT 5678
 #define BACKLOG 2
 #define ERROR_1 "1: Error al crear el socket\n"
 #define ERROR_2 "2: Error durante el bind\n"

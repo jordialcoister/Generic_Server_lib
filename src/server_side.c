@@ -31,10 +31,10 @@ int create_server(t_host *s, int port, const char *address, char options){
 /*Now we setup the server info struct */
      s->addr.sin_family=AF_INET;
      if (port<=1024 || port > 65535){
-	  s->addr.sin_port=htons(PORT); 	/* default port, to revise */
+	  s->addr.sin_port=htons(DEF_PORT); 	/* default port, to revise */
      }
      else
-	  s->addr.sin_port=htons(PORT);
+	  s->addr.sin_port=htons(port);
      if (!address)
 	  s->addr.sin_addr.s_addr = INADDR_ANY;
      else
@@ -84,7 +84,7 @@ int run_server(t_host *s){
 	   * -The thread's cleaner*/
 	  res=pthread_create(&servers[i], NULL, server_core, (void *)&client[i]);
 	  if (res){
-	       printf("ERROR: Return code from pthread_create is %ld",res);
+	       printf("ERROR: Return code from pthread_create is %d",res);
 	       
 	       return res;
 	  }
@@ -126,15 +126,15 @@ void *server_core(void *client){
      res=auth_prompt(c);
      if (res == 0){ 		/* Tot ok */
 	  server_prompt(c);
-     } else {
-	  if (close(c->sd)<0)
-	  perror("Error al tancar la connexió: ");
-	  pthread_exit(NULL);
+     }
      /*
       * The call to pthread_exit is done implicitly when the function
       * executed in it returns, so the call isn't necessary... but I
       * put it here for clarification
       */
+     if (close(c->sd)<0){
+       perror("Error al tancar la connexió: ");
+       pthread_exit(NULL);
      }
 }
 
